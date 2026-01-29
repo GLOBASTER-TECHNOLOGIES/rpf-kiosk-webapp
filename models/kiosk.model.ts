@@ -42,6 +42,10 @@ const KioskSchema = new mongoose.Schema(
       unique: true, // e.g. TPJ-PLAT-01
     },
 
+    // --- ADD THIS LINE HERE ---
+    qrToken: { type: String },
+    // --------------------------
+
     station: StationSchema,
     location: LocationSchema,
 
