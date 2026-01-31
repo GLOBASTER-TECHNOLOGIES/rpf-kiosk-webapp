@@ -8,40 +8,65 @@ export async function POST(req: NextRequest) {
   try {
     await connect();
 
-    const { kioskCode } = await req.json();
+    const body = await req.json();
+    const { kioskCode } = body;
 
+    // console.log("---------------------------------------");
+    // console.log("🟦 POST /api/kiosk/qr CALLED");
+    // console.log("Looking for KioskCode:", kioskCode);
+
+    // 1. Find the Kiosk
     const kiosk = await Kiosk.findOne({ kioskCode });
+
     if (!kiosk) {
+      // console.log("❌ Error: Kiosk NOT found in DB");
       return NextResponse.json(
         { success: false, message: "Kiosk not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
+    console.log("✅ Kiosk Found:", kiosk._id);
 
-    // Generate secure token
+    // 2. Generate secure token
     const qrToken = crypto.randomUUID();
+    console.log("Generated New Token:", qrToken);
 
+    // 3. Update & Save
     kiosk.qrToken = qrToken;
-    await kiosk.save();
+    const savedDoc = await kiosk.save();
 
-    // QR will only contain token
-    const qrData = `${process.env.NEXT_PUBLIC_APP_URL}/kiosk/verify?token=${qrToken}`;
+    // --- CRITICAL CHECK ---
+    // console.log("💾 SAVED DOCUMENT TOKEN:", savedDoc.qrToken);
+
+    if (!savedDoc.qrToken) {
+      // console.log("🔴 CRITICAL: 'qrToken' is MISSING in saved document.");
+      // console.log("👉 ACTION: You must add 'qrToken: { type: String }' to your Mongoose Schema!");
+    } else {
+      // console.log("🟢 SUCCESS: Token persisted to database.");
+    }
+
+    // 4. Generate QR Data
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    // console.log("🔗 APP URL from ENV:", appUrl);
+
+    if (!appUrl) {
+      //  console.log("⚠️ WARNING: NEXT_PUBLIC_APP_URL is undefined! QR will be broken.");
+    }
+
+    const qrData = `${appUrl}/kiosk/verify?token=${qrToken}`;
+    // console.log("🏁 Final QR Data encoded:", qrData);
 
     const qrImage = await QRCode.toDataURL(qrData);
+    // console.log("---------------------------------------");
 
     return NextResponse.json({
       success: true,
       qrToken,
-      qrImage, // base64 image
+      qrImage,
+      data: kiosk,
     });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    console.error("❌ POST Error:", error);
+    return NextResponse.json({ success: false }, { status: 500 });
   }
-}
-
-export async function GET() {
-  return NextResponse.json({ ok: true });
 }
