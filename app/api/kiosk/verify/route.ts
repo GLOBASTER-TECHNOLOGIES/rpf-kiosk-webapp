@@ -9,19 +9,31 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const token = searchParams.get("token");
 
+    // console.log("---------------------------------------");
+    // console.log("🟧 GET /api/kiosk/verify CALLED");
+    // console.log("📥 Received Token from App:", token);
+
     if (!token) {
+      // console.log("❌ Error: Token is missing from URL parameters");
       return NextResponse.json(
         { success: false, message: "Token missing" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
+    // Query DB
+    // console.log("🔎 Searching DB for qrToken:", token);
     const kiosk = await Kiosk.findOne({ qrToken: token });
 
     if (!kiosk) {
+      // console.log("⛔ FAIL: No Kiosk found with this token.");
+      // console.log(
+      //   "👉 Suggestion: Token might be expired, overwritten, or never saved.",
+      // );
+
       return NextResponse.json(
         { success: false, message: "Invalid QR" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -30,9 +42,7 @@ export async function GET(req: NextRequest) {
       data: kiosk,
     });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    console.error("❌ GET Error:", error);
+    return NextResponse.json({ success: false }, { status: 500 });
   }
 }
