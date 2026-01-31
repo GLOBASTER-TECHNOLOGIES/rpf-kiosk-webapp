@@ -21,11 +21,11 @@ export async function GET() {
       { status: 200 },
     );
   } catch (error) {
+    console.log(error);
     return NextResponse.json(
       {
         success: false,
         message: "Failed to fetch kiosks",
-        error: error.message,
       },
       { status: 500 },
     );
@@ -53,22 +53,13 @@ export async function POST(req: NextRequest) {
       { status: 201 },
     );
   } catch (error) {
-    // Duplicate kioskCode handling
-    if (error.code === 11000) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Kiosk with this kioskCode already exists",
-        },
-        { status: 409 },
-      );
-    }
+
+    console.log(error);
 
     return NextResponse.json(
       {
         success: false,
         message: "Failed to save kiosk",
-        error: error.message,
       },
       { status: 500 },
     );
